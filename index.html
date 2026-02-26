@@ -1152,13 +1152,16 @@ function startReading() {
 }
 
 async function callClaude() {
-  const sp=SPREADS[state.spread];
-  const lines=state.drawnCards.map((c,i)=>`${i+1}. [${sp.positions[i]}] ${c.name} (${c.reversed?'역방향':'정방향'}) — ${c.reversed?c.rev:c.up}`).join('\n');
-  const prompt=`당신은 'Arcana'입니다. 수백 년의 타로 지혜를 담은 신비로운 안내자이자, 20여 년 현장 경험을 가진 전문 상담사입니다. 따뜻하고 직관적이며, 신비롭지만 현실적인 조언을 줍니다.
+  const sp = SPREADS[state.spread];
+  const lines = state.drawnCards.map((c, i) =>
+    `${i+1}. [${sp.positions[i]}] ${c.name} (${c.reversed?'역방향':'정방향'}) — ${c.reversed?c.rev:c.up}`
+  ).join('\n');
+
+  const prompt = `당신은 'Arcana'입니다. 수백 년의 타로 지혜를 담은 신비로운 안내자이자, 20여 년 현장 경험을 가진 전문 상담사입니다. 따뜻하고 직관적이며, 신비롭지만 현실적인 조언을 줍니다.
 
 스프레드: ${sp.name}
-${state.currentQuestion?`질문: ${state.currentQuestion}`:'(자유 리딩)'}
-${state.emotion?`현재 감정: ${state.emotion}`:''}
+${state.currentQuestion ? `질문: ${state.currentQuestion}` : '(자유 리딩)'}
+${state.emotion ? `현재 감정: ${state.emotion}` : ''}
 
 카드:
 ${lines}
@@ -1170,15 +1173,54 @@ ${lines}
 4. ✦ 핵심 메시지 한 줄
 
 350~500자 한국어, 'Arcana'의 목소리로 작성하되 너무 추상적이지 않게.`;
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':CLAUDE_API_KEY,'anthropic-version':'2023-06-01'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,messages:[{role:'user',content:prompt}]})
+
+  const r = await fetch('/api/tarot', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: prompt }]
+    })
   });
-  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||`HTTP ${r.status}`);}
-  const d=await r.json();
-  return d.content[0]?.text||'응답 없음';
+
+  if (!r.ok) {
+    const e = await r.json();
+    throw new Error(e.error || `HTTP ${r.status}`);
+  }
+  const d = await r.json();
+  return d.content[0]?.text || '응답 없음';
 }
+```
+
+**Commit changes** 클릭
+
+---
+
+## Step 3 — Vercel 환경변수 등록
+```
+vercel.com → tarot108 프로젝트
+→ Settings → Environment Variables
+→ Key   : CLAUDE_API_KEY
+→ Value : sk-ant-api03-...실제키...
+→ Save
+```
+
+---
+
+## Step 4 — Vercel 재배포
+```
+Deployments 탭
+→ 최신 배포 [...] → Redeploy
+```
+
+---
+
+## 완료 후 흐름
+```
+브라우저 → /api/tarot (키 없음, 안전)
+              ↓
+         Vercel 서버 (키는 여기에만 존재)
+              ↓
+         Anthropic Claude API
 
 function typewrite(el,text){
   el.textContent=''; let i=0;
