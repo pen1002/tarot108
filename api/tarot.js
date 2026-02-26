@@ -15,19 +15,21 @@ module.exports = function handler(req, res) {
     return;
   }
 
-  const apiKey = process.env.CLAUDE_API_KEY;
+  var apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) {
     res.status(500).json({ error: 'API Key 미설정' });
     return;
   }
 
-  const payload = JSON.stringify({
+  var messages = req.body && req.body.messages ? req.body.messages : [];
+
+  var payload = JSON.stringify({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1024,
-    messages: req.body.messages
+    messages: messages
   });
 
-  const options = {
+  var options = {
     hostname: 'api.anthropic.com',
     path: '/v1/messages',
     method: 'POST',
@@ -39,29 +41,25 @@ module.exports = function handler(req, res) {
     }
   };
 
-  const request = https.request(options, function(response) {
-    let data = '';
+  var req2 = https.request(options, function(response) {
+    var data = '';
     response.on('data', function(chunk) {
       data += chunk;
     });
     response.on('end', function() {
       try {
-        const parsed = JSON.parse(data);
-        if (response.statusCode !== 200) {
-          res.status(response.statusCode).json({ error: parsed.error ? parsed.error.message : '오류' });
-        } else {
-          res.status(200).json(parsed);
-        }
+        var parsed = JSON.parse(data);
+        res.status(response.statusCode).json(parsed);
       } catch (e) {
-        res.status(500).json({ error: '파싱오류: ' + data.slice(0, 80) });
+        res.status(500).json({ error: 'parse error' });
       }
     });
   });
 
-  request.on('error', function(e) {
+  req2.on('error', function(e) {
     res.status(500).json({ error: e.message });
   });
 
-  request.write(payload);
-  request.end();
+  req2.write(payload);
+  req2.end();
 };
