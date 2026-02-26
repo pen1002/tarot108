@@ -15,11 +15,13 @@ module.exports = function handler(req, res) {
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(payload) }
   };
   var r = https.request(opts, function(response) {
-    var data = '';
-    response.on('data', function(c) { data += c; });
+    var chunks = [];
+    response.on('data', function(c) { chunks.push(Buffer.from(c)); });
     response.on('end', function() {
-      try { res.status(response.statusCode).json(JSON.parse(data)); }
-      catch(e) { res.status(500).json({ error: 'parse error' }); }
+      try {
+        var body = Buffer.concat(chunks).toString('utf8');
+        res.status(response.statusCode).json(JSON.parse(body));
+      } catch(e) { res.status(500).json({ error: 'parse error' }); }
     });
   });
   r.on('error', function(e) { res.status(500).json({ error: e.message }); });
