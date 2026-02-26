@@ -1,3 +1,5 @@
+const https = require('https');
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -13,41 +15,60 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'API Key 미설정' });
   }
 
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const payload = JSON.stringify({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1024,
+    messages: req.body.messages,
+  });
+
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(payload),
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        messages: req.body.messages,
-      }),
+    };
+
+    const request = https.request(options, (response) => {
+      let data = '';
+      response.on('data', (chunk) => { data += chunk; });
+      response.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (response.statusCode !== 200) {
+            res.status(response.statusCode).json({ 
+              error: parsed.error?.message || '오류' 
+            });
+          } else {
+            res.status(200).json(parsed);
+          }
+        } catch (e) {
+          res.status(500).json({ error: '응답 파싱 오류: ' + data.slice(0, 100) });
+        }
+        resolve();
+      });
     });
 
-    const data = await response.json();
+    request.on('error', (e) => {
+      res.status(500).json({ error: e.message });
+      resolve();
+    });
 
-    if (!response.ok) {
-      return res.status(response.status).json({ 
-        error: data.error?.message || '오류' 
-      });
-    }
-
-    return res.status(200).json(data);
-
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
+    request.write(payload);
+    request.end();
+  });
 };
 ```
 
 ---
 
-## 커밋 후
+## 커밋 후 확인
 ```
 Vercel → tarot108 → Deployments
-→ 새 배포 🟢 Ready 확인 (약 1분)
-→ tarot108.vercel.app 에서 다시 테스트
+→ 새 배포 🟢 Ready (1~2분)
+→ tarot108.vercel.app 테스트
