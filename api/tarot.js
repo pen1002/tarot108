@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,14 +10,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key가 서버에 설정되지 않았습니다' });
-  }
-
-  let body;
-  try {
-    body = req.body;
-  } catch (e) {
-    return res.status(400).json({ error: '요청 형식 오류' });
+    return res.status(500).json({ error: 'API Key 미설정' });
   }
 
   try {
@@ -31,40 +24,30 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1024,
-        messages: body.messages,
+        messages: req.body.messages,
       }),
     });
 
-    const text = await response.text();
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({ error: 'Claude API 응답 파싱 오류: ' + text.slice(0, 100) });
-    }
+    const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || '알 수 없는 오류' });
+      return res.status(response.status).json({ 
+        error: data.error?.message || '오류' 
+      });
     }
 
     return res.status(200).json(data);
 
   } catch (err) {
-    return res.status(500).json({ error: '서버 오류: ' + err.message });
+    return res.status(500).json({ error: err.message });
   }
-}
+};
 ```
 
 ---
 
-## 커밋 후 자동 재배포 확인
+## 커밋 후
 ```
 Vercel → tarot108 → Deployments
-→ 새 배포가 🟢 Ready 되면
+→ 새 배포 🟢 Ready 확인 (약 1분)
 → tarot108.vercel.app 에서 다시 테스트
-```
-
-혹시 그래도 오류가 나면 Vercel **Runtime Logs** 내용 캡처해서 보내주세요:
-```
-Vercel → tarot108 → Overview → [Runtime Logs] 버튼
