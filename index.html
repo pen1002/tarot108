@@ -632,27 +632,11 @@ header {
   padding: 10px 4px;
   overflow-x: auto;
 }
-.celtic-cross-grid {
-  display: grid;
-  grid-template-areas:
-    ". top ."
-    "left center right"
-    ". bottom .";
-  grid-template-columns: 108px 108px 108px;
-  grid-template-rows: auto auto auto;
-  gap: 10px;
+.celtic-cross-container {
+  position: relative;
+  width: 364px;
+  height: 560px;
   flex-shrink: 0;
-}
-.gc-top    { grid-area: top; }
-.gc-left   { grid-area: left; }
-.gc-center { grid-area: center; position: relative; display:flex; align-items:center; justify-content:center; }
-.gc-right  { grid-area: right; }
-.gc-bottom { grid-area: bottom; }
-.gc-cross-card {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 2;
 }
 .celtic-staff {
   display: flex;
@@ -1102,58 +1086,56 @@ function renderCeltic(container) {
   const wrap = document.createElement('div');
   wrap.className = 'celtic-wrapper';
 
-  // === 왼쪽: 십자가 그리드 ===
-  // 위(2:의식적목표) / 좌(4:과거) / 중심(0:현재상황+1:교차) / 우(5:가까운미래) / 아래(3:무의식기반)
-  const grid = document.createElement('div');
-  grid.className = 'celtic-cross-grid';
+  // 카드 크기
+  const cw = 108, ch = 175, gap = 10;
 
-  function makeCell(areaClass) {
-    const d = document.createElement('div');
-    d.className = areaClass;
-    return d;
+  // 십자가 컨테이너 (절대 위치)
+  const cross = document.createElement('div');
+  cross.className = 'celtic-cross-container';
+  // 전체 크기: 3열 x 3행 + 레이블 공간
+  // col0=0, col1=118, col2=236
+  // row0=0, row1=190, row2=380
+  const col = [0, cw+gap, (cw+gap)*2];
+  const row = [0, ch+gap+15, (ch+gap+15)*2];
+
+  function placeCard(cardIdx, c, r, rotate) {
+    const slot = mkSlot(cards[cardIdx], cardIdx, sp.positions[cardIdx]);
+    slot.style.position = 'absolute';
+    slot.style.left = col[c] + 'px';
+    slot.style.top = row[r] + 'px';
+    if(rotate) {
+      slot.querySelector('.card-3d').style.transform = 'rotate(90deg)';
+      const lbl = slot.querySelector('.card-pos-label');
+      if(lbl) lbl.style.display = 'none';
+      slot.style.zIndex = '2';
+      // 가로로 회전된 카드는 중앙 맞춤
+      slot.style.left = (col[1] + (cw - ch)/2) + 'px';
+      slot.style.top = (row[1] + (ch - cw)/2) + 'px';
+    }
+    cross.appendChild(slot);
   }
 
-  // 위
-  const topCell = makeCell('gc-top');
-  topCell.appendChild(mkSlot(cards[2], 2, sp.positions[2]));
-  grid.appendChild(topCell);
+  // 위 (2: 의식적 목표) - col1, row0
+  placeCard(2, 1, 0, false);
+  // 좌 (4: 과거) - col0, row1
+  placeCard(4, 0, 1, false);
+  // 중심 (0: 현재 상황) - col1, row1
+  placeCard(0, 1, 1, false);
+  // 교차 (1: 교차 영향) - col1, row1 회전 겹침
+  placeCard(1, 1, 1, true);
+  // 우 (5: 가까운 미래) - col2, row1
+  placeCard(5, 2, 1, false);
+  // 아래 (3: 무의식 기반) - col1, row2
+  placeCard(3, 1, 2, false);
 
-  // 좌
-  const leftCell = makeCell('gc-left');
-  leftCell.appendChild(mkSlot(cards[4], 4, sp.positions[4]));
-  grid.appendChild(leftCell);
-
-  // 중심 (카드0 + 카드1 교차 겹침)
-  const centerCell = makeCell('gc-center');
-  centerCell.appendChild(mkSlot(cards[0], 0, sp.positions[0]));
-  const crossDiv = document.createElement('div');
-  crossDiv.className = 'gc-cross-card';
-  const crossSlot = mkSlot(cards[1], 1, sp.positions[1]);
-  crossSlot.querySelector('.card-3d').style.transform = 'rotate(90deg)';
-  const lbl = crossSlot.querySelector('.card-pos-label');
-  if(lbl) lbl.style.display = 'none';
-  crossDiv.appendChild(crossSlot);
-  centerCell.appendChild(crossDiv);
-  grid.appendChild(centerCell);
-
-  // 우
-  const rightCell = makeCell('gc-right');
-  rightCell.appendChild(mkSlot(cards[5], 5, sp.positions[5]));
-  grid.appendChild(rightCell);
-
-  // 아래
-  const bottomCell = makeCell('gc-bottom');
-  bottomCell.appendChild(mkSlot(cards[3], 3, sp.positions[3]));
-  grid.appendChild(bottomCell);
-
-  // === 오른쪽: 스태프 (아래→위: 6자신태도, 7외부환경, 8희망두려움, 9최종결과) ===
+  // 오른쪽 스태프 (아래→위: 6자신태도, 7외부환경, 8희망두려움, 9최종결과)
   const staff = document.createElement('div');
   staff.className = 'celtic-staff';
   [6, 7, 8, 9].forEach(ci => {
     staff.appendChild(mkSlot(cards[ci], ci, sp.positions[ci]));
   });
 
-  wrap.appendChild(grid);
+  wrap.appendChild(cross);
   wrap.appendChild(staff);
   container.appendChild(wrap);
 }
