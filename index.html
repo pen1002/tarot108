@@ -638,13 +638,19 @@ header {
 .celtic-tbl { border-collapse: separate; border-spacing: 8px; }
 .celtic-tbl td { padding: 0; vertical-align: top; }
 .celtic-tbl td.empty { visibility: hidden; width: 108px; height: 215px; }
-.celtic-tbl td.center-cell { position: relative; min-height: 215px; }
+.celtic-tbl td.center-cell { padding: 0; }
+.center-cell-wrap {
+  position: relative;
+  display: inline-block;
+  width: 108px;
+}
 .cross-card-overlay {
   position: absolute;
   top: 53px;
   left: -34px;
   z-index: 4;
   width: 175px;
+  pointer-events: auto;
 }
 .cross-card-overlay .card-3d { transform: rotate(90deg); }
 .celtic-staff {
@@ -707,7 +713,7 @@ header {
     <button class="spread-btn" onclick="selectSpread(this,'three')">
       <span class="s-count">3장</span>
       <span class="s-icon">🌊</span>
-      <span class="s-name">과·현·미</span>
+      <span class="s-name">과거·현재·미래</span>
       <span class="s-desc">시간의 흐름</span>
     </button>
     <button class="spread-btn" onclick="selectSpread(this,'love')">
@@ -1122,20 +1128,22 @@ function renderCeltic(container) {
   var tr2 = document.createElement('tr');
   tr2.appendChild(td(mkSlot(cards[4],4,sp.positions[4])));
 
-  // 중심 셀: card0 위에 card1을 절대위치로 겹침
+  // 중심 셀: position:relative는 td가 아닌 내부 div에 적용
   var centerTd = document.createElement('td');
   centerTd.className = 'center-cell';
-  var slot0 = mkSlot(cards[0],0,sp.positions[0]);
-  centerTd.appendChild(slot0);
-  // 교차 카드 오버레이 (90도 회전, 중앙 겹침)
+  // 래퍼 div (position:relative 담당)
+  var centerWrap = document.createElement('div');
+  centerWrap.className = 'center-cell-wrap';
+  centerWrap.appendChild(mkSlot(cards[0],0,sp.positions[0]));
+  // 교차 카드 오버레이 (90도 회전)
   var overlayDiv = document.createElement('div');
   overlayDiv.className = 'cross-card-overlay';
   var crossSlot = mkSlot(cards[1],1,sp.positions[1]);
   var lbl = crossSlot.querySelector('.card-pos-label');
   if(lbl) lbl.style.display = 'none';
-  // 교차카드 클릭 이벤트 유지 (card-3d 찾아서 rotate)
   overlayDiv.appendChild(crossSlot);
-  centerTd.appendChild(overlayDiv);
+  centerWrap.appendChild(overlayDiv);
+  centerTd.appendChild(centerWrap);
   tr2.appendChild(centerTd);
 
   tr2.appendChild(td(mkSlot(cards[5],5,sp.positions[5])));
