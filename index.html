@@ -626,7 +626,7 @@ header {
 /* ===== CELTIC CROSS ===== */
 .celtic-wrapper {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   justify-content: center;
   align-items: flex-start;
   padding: 10px 4px;
@@ -642,13 +642,18 @@ header {
   display: flex;
   flex-direction: row;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 .celtic-empty {
   width: 108px;
   height: 195px;
   flex-shrink: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+  visibility: hidden;
 }
 .celtic-center {
   position: relative;
@@ -668,6 +673,7 @@ header {
   flex-direction: column-reverse;
   gap: 8px;
   flex-shrink: 0;
+  margin-top: 10px;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -1111,27 +1117,27 @@ function renderCeltic(container) {
   const wrap = document.createElement('div');
   wrap.className = 'celtic-wrapper';
 
-  // ── 십자가 (3행) ──────────────────────────────
   const cross = document.createElement('div');
   cross.className = 'celtic-cross';
 
-  // 행1: 빈칸 | 위(2:의식적목표) | 빈칸
-  const row1 = document.createElement('div'); row1.className = 'celtic-row';
-  const e1 = document.createElement('div'); e1.className = 'celtic-empty';
-  const e2 = document.createElement('div'); e2.className = 'celtic-empty';
-  row1.appendChild(e1);
+  // ── 행1: 위(2:의식적목표) 중앙 ──
+  const row1 = document.createElement('div');
+  row1.className = 'celtic-row';
+  const e1a = document.createElement('div'); e1a.className = 'celtic-empty';
+  const e1b = document.createElement('div'); e1b.className = 'celtic-empty';
+  row1.appendChild(e1a);
   row1.appendChild(mkSlot(cards[2], 2, sp.positions[2]));
-  row1.appendChild(e2);
+  row1.appendChild(e1b);
   cross.appendChild(row1);
 
-  // 행2: 좌(4:과거) | 중심(0)+교차(1) | 우(5:미래)
-  const row2 = document.createElement('div'); row2.className = 'celtic-row';
+  // ── 행2: 좌(4) | 중심(0)+교차(1) | 우(5) ──
+  const row2 = document.createElement('div');
+  row2.className = 'celtic-row';
 
-  // 중심 컨테이너
   const centerWrap = document.createElement('div');
   centerWrap.className = 'celtic-center';
   centerWrap.appendChild(mkSlot(cards[0], 0, sp.positions[0]));
-  // 교차카드 오버레이
+
   const overlay = document.createElement('div');
   overlay.className = 'celtic-cross-overlay';
   const crossSlot = mkSlot(cards[1], 1, sp.positions[1]);
@@ -1146,16 +1152,17 @@ function renderCeltic(container) {
   row2.appendChild(mkSlot(cards[5], 5, sp.positions[5]));
   cross.appendChild(row2);
 
-  // 행3: 빈칸 | 아래(3:무의식기반) | 빈칸
-  const row3 = document.createElement('div'); row3.className = 'celtic-row';
-  const e3 = document.createElement('div'); e3.className = 'celtic-empty';
-  const e4 = document.createElement('div'); e4.className = 'celtic-empty';
-  row3.appendChild(e3);
+  // ── 행3: 아래(3:무의식기반) 중앙 ──
+  const row3 = document.createElement('div');
+  row3.className = 'celtic-row';
+  const e3a = document.createElement('div'); e3a.className = 'celtic-empty';
+  const e3b = document.createElement('div'); e3b.className = 'celtic-empty';
+  row3.appendChild(e3a);
   row3.appendChild(mkSlot(cards[3], 3, sp.positions[3]));
-  row3.appendChild(e4);
+  row3.appendChild(e3b);
   cross.appendChild(row3);
 
-  // ── 스태프 (아래→위: 6,7,8,9) ─────────────────
+  // ── 스태프: 아래→위 6,7,8,9 ──
   const staff = document.createElement('div');
   staff.className = 'celtic-staff';
   [6, 7, 8, 9].forEach(ci => staff.appendChild(mkSlot(cards[ci], ci, sp.positions[ci])));
