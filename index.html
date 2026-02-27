@@ -632,6 +632,17 @@ header {
   padding: 10px 4px;
   overflow-x: auto;
 }
+.celtic-tbl { border-collapse: separate; border-spacing: 8px; }
+.celtic-tbl td { padding: 0; vertical-align: top; }
+.celtic-tbl td.empty { visibility: hidden; width: 108px; height: 195px; }
+.celtic-tbl td.center-cell { position: relative; }
+.cross-card-overlay {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -42%);
+  z-index: 4;
+}
+.cross-card-overlay .card-3d { transform: rotate(90deg) !important; }
 .celtic-staff {
   display: flex;
   flex-direction: column-reverse;
@@ -1076,60 +1087,67 @@ function mkSlot(card, index, posLabel) {
 }
 
 function renderCeltic(container) {
-  const sp = SPREADS.celtic, cards = state.drawnCards;
-  const CW = 108, CH = 195, GAP = 8;
-
-  // 십자가 전체를 하나의 position:relative 컨테이너로
-  // 총 너비: CW*3 + GAP*2 = 340
-  // 총 높이: CH*3 + GAP*2 = 601
-  const totalW = CW*3 + GAP*2;
-  const totalH = CH*3 + GAP*2;
-
-  const wrap = document.createElement('div');
+  var sp = SPREADS.celtic, cards = state.drawnCards;
+  var wrap = document.createElement('div');
   wrap.className = 'celtic-wrapper';
 
-  // 십자가 컨테이너 (position:relative, 고정크기)
-  const cross = document.createElement('div');
-  cross.style.cssText = 'position:relative;width:'+totalW+'px;height:'+totalH+'px;flex-shrink:0;';
+  // ── 십자가: HTML table 사용 ──
+  var tbl = document.createElement('table');
+  tbl.className = 'celtic-tbl';
 
-  function pos(slot, col, row) {
-    slot.style.position = 'absolute';
-    slot.style.left = (col*(CW+GAP))+'px';
-    slot.style.top = (row*(CH+GAP))+'px';
-    slot.style.width = CW+'px';
-    return slot;
+  function td(content, cls) {
+    var cell = document.createElement('td');
+    if(cls) cell.className = cls;
+    if(content) cell.appendChild(content);
+    return cell;
+  }
+  function emptyTd() {
+    var cell = document.createElement('td');
+    cell.className = 'empty';
+    return cell;
   }
 
-  // col0=0, col1=CW+GAP, col2=(CW+GAP)*2
-  // row0=0, row1=CH+GAP, row2=(CH+GAP)*2
+  // 행1: 빈칸 | 위(2:의식적목표) | 빈칸
+  var tr1 = document.createElement('tr');
+  tr1.appendChild(emptyTd());
+  tr1.appendChild(td(mkSlot(cards[2],2,sp.positions[2])));
+  tr1.appendChild(emptyTd());
+  tbl.appendChild(tr1);
 
-  // 위 (2: 의식적목표) col1 row0
-  cross.appendChild(pos(mkSlot(cards[2],2,sp.positions[2]), 1, 0));
-  // 좌 (4: 과거) col0 row1
-  cross.appendChild(pos(mkSlot(cards[4],4,sp.positions[4]), 0, 1));
-  // 중심 (0: 현재상황) col1 row1
-  cross.appendChild(pos(mkSlot(cards[0],0,sp.positions[0]), 1, 1));
-  // 교차 (1: 교차영향) col1 row1 중앙 겹침 (90도 회전)
-  var cs = mkSlot(cards[1],1,sp.positions[1]);
-  cs.querySelector('.card-3d').style.transform = 'rotate(90deg)';
-  var cslbl = cs.querySelector('.card-pos-label');
-  if(cslbl) cslbl.style.display='none';
-  cs.style.position = 'absolute';
-  cs.style.left = (1*(CW+GAP) + (CW-CH)/2)+'px';
-  cs.style.top  = (1*(CH+GAP) + (CH-CW)/2)+'px';
-  cs.style.zIndex = '3';
-  cross.appendChild(cs);
-  // 우 (5: 가까운미래) col2 row1
-  cross.appendChild(pos(mkSlot(cards[5],5,sp.positions[5]), 2, 1));
-  // 아래 (3: 무의식기반) col1 row2
-  cross.appendChild(pos(mkSlot(cards[3],3,sp.positions[3]), 1, 2));
+  // 행2: 좌(4:과거) | 중심(0)+교차(1)겹침 | 우(5:가까운미래)
+  var tr2 = document.createElement('tr');
+  tr2.appendChild(td(mkSlot(cards[4],4,sp.positions[4])));
 
-  // 스태프 (아래→위: 6,7,8,9)
-  const staff = document.createElement('div');
+  // 중심 셀: card0 위에 card1을 절대위치로 겹침
+  var centerTd = document.createElement('td');
+  centerTd.className = 'center-cell';
+  centerTd.appendChild(mkSlot(cards[0],0,sp.positions[0]));
+  // 교차 카드 오버레이
+  var overlayDiv = document.createElement('div');
+  overlayDiv.className = 'cross-card-overlay';
+  var crossSlot = mkSlot(cards[1],1,sp.positions[1]);
+  var lbl = crossSlot.querySelector('.card-pos-label');
+  if(lbl) lbl.style.display = 'none';
+  overlayDiv.appendChild(crossSlot);
+  centerTd.appendChild(overlayDiv);
+  tr2.appendChild(centerTd);
+
+  tr2.appendChild(td(mkSlot(cards[5],5,sp.positions[5])));
+  tbl.appendChild(tr2);
+
+  // 행3: 빈칸 | 아래(3:무의식기반) | 빈칸
+  var tr3 = document.createElement('tr');
+  tr3.appendChild(emptyTd());
+  tr3.appendChild(td(mkSlot(cards[3],3,sp.positions[3])));
+  tr3.appendChild(emptyTd());
+  tbl.appendChild(tr3);
+
+  // ── 스태프: 아래→위 6,7,8,9 ──
+  var staff = document.createElement('div');
   staff.className = 'celtic-staff';
-  [6,7,8,9].forEach(ci => staff.appendChild(mkSlot(cards[ci],ci,sp.positions[ci])));
+  [6,7,8,9].forEach(function(ci){ staff.appendChild(mkSlot(cards[ci],ci,sp.positions[ci])); });
 
-  wrap.appendChild(cross);
+  wrap.appendChild(tbl);
   wrap.appendChild(staff);
   container.appendChild(wrap);
 }
